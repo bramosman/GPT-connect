@@ -1,13 +1,13 @@
-import botImage from './assets/bot.svg';
-import userImage from './assets/user.svg';
+import bot from './assets/bot.svg'
+import user from './assets/user.svg'
 
-const form = document.querySelector('form');
-const chatContainer = document.querySelector('#chat_container');
+const form = document.querySelector('form')
+const chatContainer = document.querySelector('#chat_container')
 
-let loadInterval;
+let loadInterval
 
 function loader(element) {
-    element.textContent = '';
+    element.textContent = ''
 
     loadInterval = setInterval(() => {
         // Update the text content of the loading indicator
@@ -21,21 +21,21 @@ function loader(element) {
 }
 
 function typeText(element, text) {
-    let index = 0;
+    let index = 0
 
     let interval = setInterval(() => {
         if (index < text.length) {
-            element.innerHTML += text.charAt(index);
-            index++;
+            element.innerHTML += text.charAt(index)
+            index++
         } else {
-            clearInterval(interval);
+            clearInterval(interval)
         }
-    }, 20);
+    }, 20)
 }
 
-// Generate a unique ID for each message div of the bot
-// Necessary for the typing text effect for that specific reply
-// Without a unique ID, typing text will work on every element
+// generate unique ID for each message div of bot
+// necessary for typing text effect for that specific reply
+// without unique ID, typing text will work on every element
 function generateUniqueId() {
     const timestamp = Date.now();
     const randomNumber = Math.random();
@@ -44,234 +44,77 @@ function generateUniqueId() {
     return `id-${timestamp}-${hexadecimalString}`;
 }
 
-function createChatStripe(isAi, value, uniqueId) {
-    return `
-        <div class="wrapper ${isAi ? 'ai' : ''}">
+function chatStripe(isAi, value, uniqueId) {
+    return (
+        `
+        <div class="wrapper ${isAi && 'ai'}">
             <div class="chat">
                 <div class="profile">
                     <img 
-                      src=${isAi ? botImage : userImage} 
+                      src=${isAi ? bot : user} 
                       alt="${isAi ? 'bot' : 'user'}" 
                     />
                 </div>
                 <div class="message" id=${uniqueId}>${value}</div>
             </div>
         </div>
-    `;
+    `
+    )
 }
 
 const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    const data = new FormData(form);
+    const data = new FormData(form)
 
-    // User's chat stripe
-    chatContainer.innerHTML += createChatStripe(false, data.get('prompt'));
+    // user's chatstripe
+    chatContainer.innerHTML += chatStripe(false, data.get('prompt'))
 
-    // Clear the textarea input 
-    form.reset();
+    // to clear the textarea input 
+    form.reset()
 
-    // Bot's chat stripe
-    const uniqueId = generateUniqueId();
-    chatContainer.innerHTML += createChatStripe(true, ' ', uniqueId);
+    // bot's chatstripe
+    const uniqueId = generateUniqueId()
+    chatContainer.innerHTML += chatStripe(true, " ", uniqueId)
 
-    // Focus on scrolling to the bottom 
+    // to focus scroll to the bottom 
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
-    // Specific message div 
-    const messageDiv = document.getElementById(uniqueId);
+    // specific message div 
+    const messageDiv = document.getElementById(uniqueId)
 
-    // Fetch data from the server with exponential backoff
-    try {
-        const maxRetries = 3; // Maximum number of retries
-        let retryCount = 0;
+    // messageDiv.innerHTML = "..."
+    loader(messageDiv)
 
-        while (retryCount <= maxRetries) {
-            const response = await fetch('https://gpt-live.onrender.com', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: data.get('prompt'),
-                }),
-            });
+    const response = await fetch('https://gpt-live.onrender.com', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            prompt: data.get('prompt')
+        })
+    })
 
-            if (response.ok) {
-                const responseData = await response.json();
-                // Handle responseData as needed
-                break; // Exit the loop on successful response
-            }
+    clearInterval(loadInterval)
+    messageDiv.innerHTML = " "
 
-            if (response.status === 429 && retryCount < maxRetries) {
-                // Increment the retry count and wait before retrying
-                retryCount++;
-                const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-                await new Promise(resolve => setTimeout(resolve, delay));
-            } else {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        }
-    } catch (error) {
-        console.error('Fetch error:', error);
-        // Handle error as needed
-        messageDiv.innerHTML = "Something went wrong";
-        alert(error.message);
-    } finally {
-        clearInterval(loadInterval);
-        messageDiv.innerHTML = " ";
+    if (response.ok) {
+        const data = await response.json();
+        const parsedData = data.bot.trim() // trims any trailing spaces/'\n' 
+
+        typeText(messageDiv, parsedData)
+    } else {
+        const err = await response.text()
+
+        messageDiv.innerHTML = "Something went wrong"
+        alert(err)
     }
-};
+}
 
-form.addEventListener('submit', handleSubmit);
+form.addEventListener('submit', handleSubmit)
 form.addEventListener('keyup', (e) => {
     if (e.keyCode === 13) {
-        handleSubmit(e);
+        handleSubmit(e)
     }
-});
-
-
-
-// import bot from './assets/bot.svg'
-// import user from './assets/user.svg'
-
-// const form = document.querySelector('form')
-// const chatContainer = document.querySelector('#chat_container')
-
-// let loadInterval
-
-// function loader(element) {
-//     element.textContent = ''
-
-//     loadInterval = setInterval(() => {
-//         // Update the text content of the loading indicator
-//         element.textContent += '.';
-
-//         // If the loading indicator has reached three dots, reset it
-//         if (element.textContent === '....') {
-//             element.textContent = '';
-//         }
-//     }, 300);
-// }
-
-// function typeText(element, text) {
-//     let index = 0
-
-//     let interval = setInterval(() => {
-//         if (index < text.length) {
-//             element.innerHTML += text.charAt(index)
-//             index++
-//         } else {
-//             clearInterval(interval)
-//         }
-//     }, 20)
-// }
-
-// // generate unique ID for each message div of bot
-// // necessary for typing text effect for that specific reply
-// // without unique ID, typing text will work on every element
-// function generateUniqueId() {
-//     const timestamp = Date.now();
-//     const randomNumber = Math.random();
-//     const hexadecimalString = randomNumber.toString(16);
-
-//     return `id-${timestamp}-${hexadecimalString}`;
-// }
-
-// function chatStripe(isAi, value, uniqueId) {
-//     return (
-//         `
-//         <div class="wrapper ${isAi && 'ai'}">
-//             <div class="chat">
-//                 <div class="profile">
-//                     <img 
-//                       src=${isAi ? bot : user} 
-//                       alt="${isAi ? 'bot' : 'user'}" 
-//                     />
-//                 </div>
-//                 <div class="message" id=${uniqueId}>${value}</div>
-//             </div>
-//         </div>
-//     `
-//     )
-// }
-
-// const handleSubmit = async (e) => {
-//     e.preventDefault()
-
-//     const data = new FormData(form)
-
-//     // user's chatstripe
-//     chatContainer.innerHTML += chatStripe(false, data.get('prompt'))
-
-//     // to clear the textarea input 
-//     form.reset()
-
-//     // bot's chatstripe
-//     const uniqueId = generateUniqueId()
-//     chatContainer.innerHTML += chatStripe(true, " ", uniqueId)
-
-//     // to focus scroll to the bottom 
-//     chatContainer.scrollTop = chatContainer.scrollHeight;
-
-//     // specific message div 
-//     const messageDiv = document.getElementById(uniqueId)
-
-//    // test 
-//    try {
-//     const response = await fetch('https://gpt-live.onrender.com', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({
-//             prompt: data.get('prompt'),
-//         }),
-//     });
-
-//     if (!response.ok) {
-//         throw new Error(`HTTP error! Status: ${response.status}`);
-//     }
-
-//     const responseData = await response.json();
-//     // Handle responseData as needed
-// } catch (error) {
-//     console.error('Fetch error:', error);
-// }
-
-//     // // messageDiv.innerHTML = "..."
-//     // loader(messageDiv)
-//     // const response = await fetch('https://gpt-live.onrender.com', {
-//     //     method: 'POST',
-//     //     headers: {
-//     //         'Content-Type': 'application/json',
-//     //     },
-//     //     body: JSON.stringify({
-//     //         prompt: data.get('prompt')
-//     //     }),
-//     // });
-
-//     // clearInterval(loadInterval)
-//     // messageDiv.innerHTML = " "
-
-//     // if (response.ok) {
-//     //     const data = await response.json();
-//     //     const parsedData = data.bot.trim()  // trims any trailing spaces/'\n' 
-
-//     //     typeText(messageDiv, parsedData)
-//     // } else {
-//     //     const err = await response.text()
-
-//     //     messageDiv.innerHTML = "Something went wrong"
-//     //     alert(err)
-//     // }
-// }
-
-    
-// form.addEventListener('submit', handleSubmit)
-// form.addEventListener('keyup', (e) => {
-//     if (e.keyCode === 13) {
-//         handleSubmit(e)
-//     }
-// })
-
+})
