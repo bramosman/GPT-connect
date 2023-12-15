@@ -92,8 +92,8 @@ const handleSubmit = async (e) => {
         },
         body: JSON.stringify({
             prompt: data.get('prompt')
-        })
-    })
+        }),
+    });
 
     clearInterval(loadInterval)
     messageDiv.innerHTML = " "
