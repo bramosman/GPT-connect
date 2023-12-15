@@ -81,26 +81,45 @@ const handleSubmit = async (e) => {
     // Specific message div 
     const messageDiv = document.getElementById(uniqueId);
 
-    // Fetch data from the server
+    // Fetch data from the server with exponential backoff
     try {
-        const response = await fetch('https://gpt-live.onrender.com', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: data.get('prompt'),
-            }),
-        });
+        const maxRetries = 3; // Maximum number of retries
+        let retryCount = 0;
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+        while (retryCount <= maxRetries) {
+            const response = await fetch('https://gpt-live.onrender.com', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: data.get('prompt'),
+                }),
+            });
+
+            if (response.ok) {
+                const responseData = await response.json();
+                // Handle responseData as needed
+                break; // Exit the loop on successful response
+            }
+
+            if (response.status === 429 && retryCount < maxRetries) {
+                // Increment the retry count and wait before retrying
+                retryCount++;
+                const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
         }
-
-        const responseData = await response.json();
-        // Handle responseData as needed
     } catch (error) {
         console.error('Fetch error:', error);
+        // Handle error as needed
+        messageDiv.innerHTML = "Something went wrong";
+        alert(error.message);
+    } finally {
+        clearInterval(loadInterval);
+        messageDiv.innerHTML = " ";
     }
 };
 
@@ -110,6 +129,7 @@ form.addEventListener('keyup', (e) => {
         handleSubmit(e);
     }
 });
+
 
 
 // import bot from './assets/bot.svg'
