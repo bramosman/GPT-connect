@@ -85,7 +85,7 @@ const handleSubmit = async (e) => {
 
     // messageDiv.innerHTML = "..."
     loader(messageDiv)
-    const response = await fetch('https://gpt-live.onrender.com/', {
+    const response = await fetch('https://gpt-live.onrender.com', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -118,3 +118,4 @@ form.addEventListener('keyup', (e) => {
         handleSubmit(e)
     }
 })
+
